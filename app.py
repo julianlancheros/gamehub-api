@@ -1,48 +1,48 @@
-        from flask import Flask, request, jsonify
-        from pymongo import MongoClient
-        from datetime import datetime
-        import os
-        import traceback
+from flask import Flask, request, jsonify
+from pymongo import MongoClient
+from datetime import datetime
+import os
+import traceback
+
+app = Flask(__name__)
+
+# ============================================
+# CONFIGURACIÓN DE MONGODB
+# ============================================
+
+MONGO_URI = os.environ.get('MONGO_URI', 'mongodb+srv://gamehub_user:GameHub2026!@gamehub-cluster.pwnljj1.mongodb.net/?retryWrites=true&w=majority&tlsAllowInvalidCertificates=true')
+
+try:
+    print("🔄 Conectando a MongoDB...")
+    client = MongoClient(
+        MONGO_URI,
+        tls=True,
+        tlsAllowInvalidCertificates=True,
+        connectTimeoutMS=30000,
+        socketTimeoutMS=30000,
+        serverSelectionTimeoutMS=30000
+    )
+    client.admin.command('ping')
+    db = client['gamehub_stats']
+    coleccion = db['estadisticas']
+    print("✅ Conectado a MongoDB Atlas")
+except Exception as e:
+    print(f"❌ Error de conexión a MongoDB: {e}")
+    coleccion = None
+
+# ============================================
+# ENDPOINT 1: Registrar estadísticas
+# ============================================
+@app.route('/api/videojuegos', methods=['POST'])
+def registrar_estadisticas():
+    print("📥 Recibida petición POST")
+    try:
+        # Obtener datos JSON
+        datos = request.get_json()
+        print(f"📦 Datos recibidos: {datos}")
         
-        app = Flask(__name__)
-        
-        # ============================================
-        # CONFIGURACIÓN DE MONGODB
-        # ============================================
-        
-        MONGO_URI = os.environ.get('MONGO_URI', 'mongodb+srv://gamehub_user:GameHub2026!@gamehub-cluster.pwnljj1.mongodb.net/?retryWrites=true&w=majority&tlsAllowInvalidCertificates=true')
-        
-        try:
-            print("🔄 Conectando a MongoDB...")
-            client = MongoClient(
-                MONGO_URI,
-                tls=True,
-                tlsAllowInvalidCertificates=True,
-                connectTimeoutMS=30000,
-                socketTimeoutMS=30000,
-                serverSelectionTimeoutMS=30000
-            )
-            client.admin.command('ping')
-            db = client['gamehub_stats']
-            coleccion = db['estadisticas']
-            print("✅ Conectado a MongoDB Atlas")
-        except Exception as e:
-            print(f"❌ Error de conexión a MongoDB: {e}")
-            coleccion = None
-        
-        # ============================================
-        # ENDPOINT 1: Registrar estadísticas
-        # ============================================
-        @app.route('/api/videojuegos', methods=['POST'])
-        def registrar_estadisticas():
-            print("📥 Recibida petición POST")
-            try:
-                # Obtener datos JSON
-                datos = request.get_json()
-                print(f"📦 Datos recibidos: {datos}")
-                
-                # Validar que hay datos
-                if datos is None:
+        # Validar que hay datos
+        if datos is None:
             print("❌ No se recibió JSON válido")
             return jsonify({"error": "No se recibió JSON válido"}), 400
         
@@ -51,10 +51,21 @@
             print("❌ Falta videojuego_id")
             return jsonify({"error": "Falta videojuego_id"}), 400
         
-        # Extraer datos
-        videojuego_id = datos['videojuego_id']
+        # ✅ CONVERTIR VIDEOJUEGO_ID A NÚMERO
+        try:
+            videojuego_id = int(datos['videojuego_id'])
+        except (TypeError, ValueError):
+            print("❌ videojuego_id no es un número válido")
+            return jsonify({"error": "videojuego_id debe ser un número"}), 400
+        
         titulo = datos.get('titulo', 'Sin título')
-        calificacion = datos.get('calificacion', 0)
+        
+        # ✅ CONVERTIR CALIFICACION A NÚMERO (¡SOLUCIÓN DEL ERROR!)
+        try:
+            calificacion = int(datos.get('calificacion', 0))
+        except (TypeError, ValueError):
+            print("❌ calificacion no es un número válido")
+            return jsonify({"error": "calificacion debe ser un número"}), 400
         
         print(f"🔍 Procesando: ID={videojuego_id}, Título={titulo}, Calificación={calificacion}")
         
@@ -72,6 +83,7 @@
             total_actual = juego.get('total_reseñas', 0)
             promedio_actual = juego.get('promedio_calificacion', 0)
             nuevo_total = total_actual + 1
+            # ✅ AHORA calificacion es un número
             nuevo_promedio = ((promedio_actual * total_actual) + calificacion) / nuevo_total
             
             coleccion.update_one(
@@ -143,6 +155,16 @@ def mejores_videojuegos():
 @app.route('/', methods=['GET'])
 def home():
     return jsonify({
+        "mensaje": "API de GameHub funcionando 🎮",
+        "endpoints": {
+            "POST /api/videojuegos": "Registrar estadísticas",
+            "GET /api/estadisticas": "Ver estadísticas",
+            "GET /api/mejores-videojuegos": "Top 5 juegos"
+        }
+    })
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)sonify({
         "mensaje": "API de GameHub funcionando 🎮",
         "endpoints": {
             "POST /api/videojuegos": "Registrar estadísticas",
