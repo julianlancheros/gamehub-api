@@ -1,48 +1,48 @@
-from flask import Flask, request, jsonify
-from pymongo import MongoClient
-from datetime import datetime
-import os
-import traceback
-
-app = Flask(__name__)
-
-# ============================================
-# CONFIGURACIÓN DE MONGODB
-# ============================================
-
-MONGO_URI = os.environ.get('MONGO_URI', 'mongodb+srv://gamehub_user:GameHub2026!@gamehub-cluster.pwnljj1.mongodb.net/?retryWrites=true&w=majority&tlsAllowInvalidCertificates=true')
-
-try:
-    print("🔄 Conectando a MongoDB...")
-    client = MongoClient(
-        MONGO_URI,
-        tls=True,
-        tlsAllowInvalidCertificates=True,
-        connectTimeoutMS=30000,
-        socketTimeoutMS=30000,
-        serverSelectionTimeoutMS=30000
-    )
-    client.admin.command('ping')
-    db = client['gamehub_stats']
-    coleccion = db['estadisticas']
-    print("✅ Conectado a MongoDB Atlas")
-except Exception as e:
-    print(f"❌ Error de conexión a MongoDB: {e}")
-    coleccion = None
-
-# ============================================
-# ENDPOINT 1: Registrar estadísticas
-# ============================================
-@app.route('/api/videojuegos', methods=['POST'])
-def registrar_estadisticas():
-    print("📥 Recibida petición POST")
-    try:
-        # Obtener datos JSON
-        datos = request.get_json()
-        print(f"📦 Datos recibidos: {datos}")
+        from flask import Flask, request, jsonify
+        from pymongo import MongoClient
+        from datetime import datetime
+        import os
+        import traceback
         
-        # Validar que hay datos
-        if datos is None:
+        app = Flask(__name__)
+        
+        # ============================================
+        # CONFIGURACIÓN DE MONGODB
+        # ============================================
+        
+        MONGO_URI = os.environ.get('MONGO_URI', 'mongodb+srv://gamehub_user:GameHub2026!@gamehub-cluster.pwnljj1.mongodb.net/?retryWrites=true&w=majority&tlsAllowInvalidCertificates=true')
+        
+        try:
+            print("🔄 Conectando a MongoDB...")
+            client = MongoClient(
+                MONGO_URI,
+                tls=True,
+                tlsAllowInvalidCertificates=True,
+                connectTimeoutMS=30000,
+                socketTimeoutMS=30000,
+                serverSelectionTimeoutMS=30000
+            )
+            client.admin.command('ping')
+            db = client['gamehub_stats']
+            coleccion = db['estadisticas']
+            print("✅ Conectado a MongoDB Atlas")
+        except Exception as e:
+            print(f"❌ Error de conexión a MongoDB: {e}")
+            coleccion = None
+        
+        # ============================================
+        # ENDPOINT 1: Registrar estadísticas
+        # ============================================
+        @app.route('/api/videojuegos', methods=['POST'])
+        def registrar_estadisticas():
+            print("📥 Recibida petición POST")
+            try:
+                # Obtener datos JSON
+                datos = request.get_json()
+                print(f"📦 Datos recibidos: {datos}")
+                
+                # Validar que hay datos
+                if datos is None:
             print("❌ No se recibió JSON válido")
             return jsonify({"error": "No se recibió JSON válido"}), 400
         
